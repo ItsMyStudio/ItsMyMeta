@@ -1,67 +1,54 @@
-#################################################################################################
-#
-#    ██╗████████╗███████╗███╗   ███╗██╗   ██╗███╗   ███╗███████╗████████╗ █████╗
-#    ██║╚══██╔══╝██╔════╝████╗ ████║╚██╗ ██╔╝████╗ ████║██╔════╝╚══██╔══╝██╔══██╗
-#    ██║   ██║   ███████╗██╔████╔██║ ╚████╔╝ ██╔████╔██║█████╗     ██║   ███████║
-#    ██║   ██║   ╚════██║██║╚██╔╝██║  ╚██╔╝  ██║╚██╔╝██║██╔══╝     ██║   ██╔══██║
-#    ██║   ██║   ███████║██║ ╚═╝ ██║   ██║   ██║ ╚═╝ ██║███████╗   ██║   ██║  ██║
-#    ╚═╝   ╚═╝   ╚══════╝╚═╝     ╚═╝   ╚═╝   ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝
-#
-#      Contact: Théo#0001
-#      Support: https://itsme.to/discord
-#      Documentation: https://docs.itsme.to/itsmymeta
-#
-#################################################################################################
+# Database storage for runtime values and leaderboard cache.
+database:
+  type: sqlite
 
-server-id: "main" # Server ID for local currencies over MySQL/MongoDB.
+  sqlite:
+    file: data.db
 
-meta:
+  mysql:
+    host: localhost
+    port: 3306
+    database: itsmymeta
+    username: root
+    password: change-me
 
-  - id: "example_string" # Meta ID
-    type: string # Meta type: string, integer or double
-    default: "Hello world"  # Meta default value
-    team: superiorSkyblock2  # Team mode, all player with the same team have the same value. Default: Player
+# Meta definitions are the schema of your plugin.
+# `type` controls parsing.
+# `scope` controls who shares the same value.
+# `default` can use PlaceholderAPI for string metas and for dynamic number expressions.
+# `decimal` only applies to `type: number`.
+# `leaderboard` is optional and only applies to number metas.
+meta-definitions:
+  server_name:
+    type: string
+    scope: global
+    default: "ItsMyMeta"
 
-  - id: "example_integer" # Meta ID
-    type: integer # Meta type: string, integer or double
-    default: 100 # Meta default value
-    max: 100000 # Maximum amount of the meta, -1 for unlimited
+  coins:
+    type: number
+    decimal: false
+    scope: player
+    default: 0
+    min: 0
+    max: 1000000
+    leaderboard:
+      enabled: true
+      exact-rank-limit: 1000
+      dynamic-refresh-minutes: 5
 
-  - id: "example_currency" # Meta ID
-    type: integer # Meta type: string, integer or double
-    default: 100 # Meta default value
-    max: 100000 # Maximum amount of the meta, -1 for unlimited
+  pvp_enabled:
+    type: string
+    scope: world
+    default: "true"
 
-    # Transform the meta as a currency
-    currency:
-      enabled: true # Enable the currency
-      name: "&bExample Currency ❖" # The name of the currency.
-      payable: false # If players should be able to use /<command> pay to pay other players
-      vault: false # If this currency should be registered with vault
-      local: false # If this currency should not sync between servers
-      commands:
-        - examplecurrency
-
-  - id: "example_placeholder" # Meta ID
-    type: double # Meta type: string, integer or double
-    max: -1 # Maximum amount of the meta, -1 for unlimited
-
-    # Placeholder, meta will have the same value of the placeholder
-    placeholder: "%player_health% + %player_food_level% / %server_online%"
-
-  - id: "example_statistics" # Meta ID
-    type: integer # Meta type: string, integer or double
-    default: 100  # Meta default value
-    max: -1 # Maximum amount of the meta, -1 for unlimited
-    team: Global # Team mode, all player with the same team have the same value. Default: Player
-
-    # Trigger system; see here for a how-to: https://docs.itsme.to/trigger-system
-    # The value of the meta will increase according to the triggers
-    statistics:
-      - id: "example_stats"
-        trigger: mine_block
-        filters:
-          blocks:
-            - diamond_ore
-            - ancient_debris
-        conditions: [ ]
+  island_tax:
+    type: number
+    decimal: false
+    scope: superiorskyblock
+    default: 100
+    min: 0
+    max: 10000
+    leaderboard:
+      enabled: true
+      exact-rank-limit: 1000
+      dynamic-refresh-minutes: 0

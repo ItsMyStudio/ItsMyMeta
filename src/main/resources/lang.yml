@@ -1,60 +1,55 @@
+prefix: "<gradient:#ffb703:#fb8500><b>ItsMyMeta</b></gradient> <white>┃</white>"
+
+logs:
+  plugin-enabled: "Loaded <count> meta definition(s) using <database_type>."
+  plugin-reloaded: "Reloaded the configuration, language file, and <count> meta definition(s)."
+  placeholderapi-registered: "Registered the PlaceholderAPI expansion."
+  leaderboards-enabled: "Configured <count> leaderboard-enabled meta(s)."
+  dynamic-leaderboard-refresh: "Dynamic leaderboard values will refresh every <minutes> minute(s) at minimum."
+
 messages:
-  prefix: "<gradient:#ef709b:#fa9372><bold>META</bold></gradient> <white>┃ "
-  no-permission: "You don't have permission to do this!"
-  not-player: "This command must be run by a player"
-  invalid-command: "Unknown subcommand!"
-  reloaded: "Reloaded!"
-  requires-player: "You must specify a player!"
-  invalid-player: "Invalid player!"
-  requires-meta: "You must specify a meta"
-  invalid-meta: "Invalid meta!"
-  requires-value: "You must specify an value"
-  invalid-value: "Invalid value!"
-  requires-place: "You must specify a place"
-  invalid-place: "Invalid place!"
-  meta-given: "You have given <light_purple>%meta%</light_purple> from <aqua>%player%</aqua> with the value of <yellow>%value%"
-  meta-taken: "You have taken <light_purple>%meta%</light_purple> from <aqua>%player%</aqua> with the value of <yellow>%value%"
-  meta-reset: "You have reset <light_purple>%meta%</light_purple> from <aqua>%player%"
-  meta-set: "You have set <light_purple>%meta%</light_purple> from <aqua>%player%</aqua> to the value of <yellow>%value%"
-  meta-info: "<aqua>%player%</aqua> has <light_purple>%meta%</light_purple> value of <yellow>%value%"
-  cant-use-meta: "This player can't use this meta! (Team is empty)"
-  requires-currency: "You must specify a currency!"
-  invalid-currency: "Invalid currency!"
-  invalid-amount: "Invalid amount!"
-  set-currency: "Set <aqua>%player%</aqua> to have <yellow>%amount%</yellow> %currency% <white>!"
-  reset-currency: "Reset <aqua>%player%</aqua> to have <yellow>%amount%</yellow> %currency%<white>!"
-  gave-currency: "Gave <aqua>%player%</aqua> <yellow>%amount%</yellow> %currency%<white>!"
-  other-balance: "<aqua>%player%</aqua> has <yellow>%amount%</yellow> %currency%<white>!"
-  balance: "You have <yellow>%amount%</yellow> %currency%<white>!"
-  cannot-afford: "You can't afford to do this!"
-  paid-player: "You paid <aqua>%player%</aqua> <yellow>%amount%</yellow> %currency%<white>!"
-  too-much: "You can't pay <aqua>%player%</aqua> this many %currency%<white> as they already have too many!"
-  leaderboard:
-    place-empty: "Meta <light_purple>%meta%</light_purple> has place <yellow>%place%</yellow> empty"
-    place: "Place <yellow>%place%</yellow> for <light_purple>%meta%</light_purple> leaderboard is
-     <aqua>%name%</aqua>: <yellow>%value%</yellow>"
+  common:
+    none: "Not set"
 
-help:
-  - ""
-  - "<gradient:#ef709b:#fa9372><bold>META</bold></gradient> <white>┃ List of commands"
-  - ""
-  - "<yellow>/meta set <player> <meta> <value></yellow> <gray>-</gray> Set the meta value for a player"
-  - "<yellow>/meta give <player> <meta> <value></yellow> <gray>-</gray> Increase the value of a meta for a player"
-  - "<yellow>/meta take <player> <meta> <value></yellow> <gray>-</gray> Reduce the value of a meta for a player"
-  - "<yellow>/meta reset <player> <meta></yellow> <gray>-</gray> Reset the value of a meta for a player"
-  - "<yellow>/meta info <player> <meta></yellow> <gray>-</gray> Get meta value for a player"
-  - "<yellow>/meta currency</yellow> <gray>-</gray> Currency based commands"
-  - "<yellow>/meta list</yellow> <gray>-</gray> <white>Get meta list"
-  - "<yellow>/meta reload</yellow> <gray>-</gray> <white>Reload ItsMyMeta"
-  - ""
+  errors:
+    generic: "<prefix> An error occurred. <br><gray><message></gray>"
+    no-permission: "<prefix> You do not have permission to use this command."
+    unknown-subcommand: "<prefix> The subcommand <yellow><input></yellow> is not valid. <br><gray>Available subcommands: <subcommands></gray>"
+    incorrect-command: "<prefix> This command is not valid. <br><gray>Please use /<label> <usage></gray>"
 
-meta-list:
-  - ""
-  - "<gradient:#ef709b:#fa9372><bold>META</bold></gradient> <white>┃ List of metas"
-  - ""
-  - "<white> ▪ <light_purple>%meta%</light_purple> - <yellow>%type%</yellow> - <green>%team%</green>"
-  - ""
+  descriptions:
+    get: "Show the current value of a meta."
+    set: "Set a meta to a new value."
+    give: "Add a numeric amount to a meta."
+    take: "Remove a numeric amount from a meta."
+    reset: "Reset a meta to its default value."
+    info: "Show the configuration of a meta."
+    list: "Show all configured metas."
+    reload: "Reload the configuration and language files."
+    help: "Show the available subcommands."
 
-empty:
-  name: "None"
-  score: "?"
+  commands:
+    get:
+      value: "<prefix> The value of <aqua><meta_key></aqua> for <yellow><target></yellow> is <green><value></green>."
+    set:
+      success: "<prefix> Set <aqua><meta_key></aqua> for <yellow><target></yellow> to <green><value></green>."
+    give:
+      success: "<prefix> Added <green><amount></green> to <aqua><meta_key></aqua> for <yellow><target></yellow>. <gray>(<value>)</gray>"
+    take:
+      success: "<prefix> Removed <green><amount></green> from <aqua><meta_key></aqua> for <yellow><target></yellow>. <gray>(<value>)</gray>"
+    reset:
+      success: "<prefix> Reset <aqua><meta_key></aqua> for <yellow><target></yellow> to <green><value></green>."
+    list:
+      value: "<prefix> The configured metas are:</white> <aqua><metas></aqua>"
+    reload:
+      success: "<prefix> The plugin configuration has been <green>reloaded</green>."
+    help:
+      header: "<prefix> Available commands:</white>"
+      entry: "<white> • /<label> <usage></white> <dark_gray>-</dark_gray> <gray><description></gray>"
+    info:
+      - "<prefix> Meta information for <aqua><meta_key></aqua>:"
+      - "<white> • Type:</white> <yellow><meta_type></yellow>"
+      - "<white> • Scope:</white> <yellow><scope></yellow>"
+      - "<white> • Default value:</white> <green><default></green>"
+      - "<white> • Minimum value:</white> <green><min></green>"
+      - "<white> • Maximum value:</white> <green><max></green>"

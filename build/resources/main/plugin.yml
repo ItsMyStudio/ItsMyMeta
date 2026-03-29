@@ -1,17 +1,37 @@
 name: ItsMyMeta
-version: 1.0.0
-main: ru.oftendev.itsmymeta.ItsMyMeta
-author: _OfTeN_
-api-version: 1.19
-depend:
-  - eco
-softdepend:
-  - SuperiorSkyblock2
-  - PlaceholderAPI
-  - BentoBox
-  - FactionsUUID
-  - HuskTowns
-  - ItsMyAchievement
+version: '1.0-SNAPSHOT'
+main: studio.itsmy.itsmymeta.ItsMyMetaPlugin
+api-version: '1.21'
+softdepend: [PlaceholderAPI, SuperiorSkyblock2]
 commands:
-  itsmymeta:
-    aliases: [meta, imm]
+  meta:
+    description: Inspect or update configured meta values
+    usage: /meta help
+permissions:
+  itsmymeta.command.help:
+    description: View the meta command help.
+    default: true
+  itsmymeta.command.get:
+    description: Read scoped meta values.
+    default: true
+  itsmymeta.command.info:
+    description: View meta definitions.
+    default: true
+  itsmymeta.command.list:
+    description: List configured metas.
+    default: true
+  itsmymeta.command.set:
+    description: Set scoped meta values.
+    default: op
+  itsmymeta.command.give:
+    description: Add numeric amounts to metas.
+    default: op
+  itsmymeta.command.take:
+    description: Remove numeric amounts from metas.
+    default: op
+  itsmymeta.command.reset:
+    description: Reset metas to their defaults.
+    default: op
+  itsmymeta.command.reload:
+    description: Reload plugin config and language files.
+    default: op
