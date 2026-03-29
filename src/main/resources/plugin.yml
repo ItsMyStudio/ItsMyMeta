@@ -1,37 +1,37 @@
-name: ItsMyMeta
+name: ItsMyData
 version: '1.0-SNAPSHOT'
-main: studio.itsmy.itsmymeta.ItsMyMetaPlugin
+main: studio.itsmy.itsmydata.ItsMyDataPlugin
 api-version: '1.21'
 softdepend: [PlaceholderAPI, SuperiorSkyblock2]
 commands:
-  meta:
-    description: Inspect or update configured meta values
-    usage: /meta help
+  data:
+    description: Inspect or update configured data values
+    usage: /data help
 permissions:
-  itsmymeta.command.help:
-    description: View the meta command help.
+  itsmydata.command.help:
+    description: View the data command help.
     default: true
-  itsmymeta.command.get:
-    description: Read scoped meta values.
+  itsmydata.command.get:
+    description: Read scoped data values.
     default: true
-  itsmymeta.command.info:
-    description: View meta definitions.
+  itsmydata.command.info:
+    description: View data definitions.
     default: true
-  itsmymeta.command.list:
-    description: List configured metas.
+  itsmydata.command.list:
+    description: List configured data values.
     default: true
-  itsmymeta.command.set:
-    description: Set scoped meta values.
+  itsmydata.command.set:
+    description: Set scoped data values.
     default: op
-  itsmymeta.command.give:
-    description: Add numeric amounts to metas.
+  itsmydata.command.give:
+    description: Add numeric amounts to data values.
     default: op
-  itsmymeta.command.take:
-    description: Remove numeric amounts from metas.
+  itsmydata.command.take:
+    description: Remove numeric amounts from data values.
     default: op
-  itsmymeta.command.reset:
-    description: Reset metas to their defaults.
+  itsmydata.command.reset:
+    description: Reset data values to their defaults.
     default: op
-  itsmymeta.command.reload:
+  itsmydata.command.reload:
     description: Reload plugin config and language files.
     default: op

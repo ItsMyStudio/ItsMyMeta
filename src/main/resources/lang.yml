@@ -1,10 +1,10 @@
-prefix: "<gradient:#ffb703:#fb8500><b>ItsMyMeta</b></gradient> <white>┃</white>"
+prefix: "<gradient:#ffb703:#fb8500><b>ItsMyData</b></gradient> <white>┃</white>"
 
 logs:
-  plugin-enabled: "Loaded <count> meta definition(s) using <database_type>."
-  plugin-reloaded: "Reloaded the configuration, language file, and <count> meta definition(s)."
+  plugin-enabled: "Loaded <count> data definition(s) using <database_type>."
+  plugin-reloaded: "Reloaded the configuration, language file, and <count> data definition(s)."
   placeholderapi-registered: "Registered the PlaceholderAPI expansion."
-  leaderboards-enabled: "Configured <count> leaderboard-enabled meta(s)."
+  leaderboards-enabled: "Configured <count> leaderboard-enabled data(s)."
   dynamic-leaderboard-refresh: "Dynamic leaderboard values will refresh every <minutes> minute(s) at minimum."
 
 messages:
@@ -18,37 +18,37 @@ messages:
     incorrect-command: "<prefix> This command is not valid. <br><gray>Please use /<label> <usage></gray>"
 
   descriptions:
-    get: "Show the current value of a meta."
-    set: "Set a meta to a new value."
-    give: "Add a numeric amount to a meta."
-    take: "Remove a numeric amount from a meta."
-    reset: "Reset a meta to its default value."
-    info: "Show the configuration of a meta."
-    list: "Show all configured metas."
+    get: "Show the current value of a data."
+    set: "Set a data to a new value."
+    give: "Add a numeric amount to a data."
+    take: "Remove a numeric amount from a data."
+    reset: "Reset a data to its default value."
+    info: "Show the configuration of a data."
+    list: "Show all configured data values."
     reload: "Reload the configuration and language files."
     help: "Show the available subcommands."
 
   commands:
     get:
-      value: "<prefix> The value of <aqua><meta_key></aqua> for <yellow><target></yellow> is <green><value></green>."
+      value: "<prefix> The value of <aqua><data_key></aqua> for <yellow><target></yellow> is <green><value></green>."
     set:
-      success: "<prefix> Set <aqua><meta_key></aqua> for <yellow><target></yellow> to <green><value></green>."
+      success: "<prefix> Set <aqua><data_key></aqua> for <yellow><target></yellow> to <green><value></green>."
     give:
-      success: "<prefix> Added <green><amount></green> to <aqua><meta_key></aqua> for <yellow><target></yellow>. <gray>(<value>)</gray>"
+      success: "<prefix> Added <green><amount></green> to <aqua><data_key></aqua> for <yellow><target></yellow>. <gray>(<value>)</gray>"
     take:
-      success: "<prefix> Removed <green><amount></green> from <aqua><meta_key></aqua> for <yellow><target></yellow>. <gray>(<value>)</gray>"
+      success: "<prefix> Removed <green><amount></green> from <aqua><data_key></aqua> for <yellow><target></yellow>. <gray>(<value>)</gray>"
     reset:
-      success: "<prefix> Reset <aqua><meta_key></aqua> for <yellow><target></yellow> to <green><value></green>."
+      success: "<prefix> Reset <aqua><data_key></aqua> for <yellow><target></yellow> to <green><value></green>."
     list:
-      value: "<prefix> The configured metas are:</white> <aqua><metas></aqua>"
+      value: "<prefix> The configured data keys are:</white> <aqua><data_keys></aqua>"
     reload:
       success: "<prefix> The plugin configuration has been <green>reloaded</green>."
     help:
       header: "<prefix> Available commands:</white>"
       entry: "<white> • /<label> <usage></white> <dark_gray>-</dark_gray> <gray><description></gray>"
     info:
-      - "<prefix> Meta information for <aqua><meta_key></aqua>:"
-      - "<white> • Type:</white> <yellow><meta_type></yellow>"
+      - "<prefix> Data information for <aqua><data_key></aqua>:"
+      - "<white> • Type:</white> <yellow><data_type></yellow>"
       - "<white> • Scope:</white> <yellow><scope></yellow>"
       - "<white> • Default value:</white> <green><default></green>"
       - "<white> • Minimum value:</white> <green><min></green>"

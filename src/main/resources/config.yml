@@ -8,21 +8,21 @@ database:
   mysql:
     host: localhost
     port: 3306
-    database: itsmymeta
+    database: itsmydata
     username: root
     password: change-me
 
-# Meta definitions are the schema of your plugin.
+# Data definitions are the schema of your plugin.
 # `type` controls parsing.
 # `scope` controls who shares the same value.
-# `default` can use PlaceholderAPI for string metas and for dynamic number expressions.
+# `default` can use PlaceholderAPI for string data values and for dynamic number expressions.
 # `decimal` only applies to `type: number`.
-# `leaderboard` is optional and only applies to number metas.
-meta-definitions:
+# `leaderboard` is optional and only applies to numeric data values.
+data-definitions:
   server_name:
     type: string
     scope: global
-    default: "ItsMyMeta"
+    default: "ItsMyData"
 
   coins:
     type: number
