@@ -1,14 +1,17 @@
 package studio.itsmy.itsmydata.commands.subcommands;
 
+import java.util.logging.Logger;
 import org.bukkit.command.CommandSender;
 import studio.itsmy.itsmydata.data.DataDefinition;
 import studio.itsmy.itsmydata.message.MessageService;
 import studio.itsmy.itsmydata.data.DataService;
+import studio.itsmy.itsmydata.scope.ResolvedScope;
+import studio.itsmy.itsmydata.task.TaskDispatcher;
 
 public final class ResetDataSubcommand extends AbstractDataSubcommand {
 
-    public ResetDataSubcommand(DataService dataService, MessageService messages) {
-        super(dataService, messages);
+    public ResetDataSubcommand(TaskDispatcher taskDispatcher, Logger logger, DataService dataService, MessageService messages) {
+        super(taskDispatcher, logger, dataService, messages);
     }
 
     @Override
@@ -40,14 +43,13 @@ public final class ResetDataSubcommand extends AbstractDataSubcommand {
         String dataKey = args[1];
         DataDefinition definition = dataService.getDefinition(dataKey);
         var target = resolveReadTarget(sender, definition, args);
-        Object resetValue = resetValue(sender, dataKey, target);
-        messages.send(
+        ResolvedScope resolvedScope = target.resolvedScope();
+        return completeAsync(sender, dataService.resetValueAsync(resolvedScope, definition), resetValue -> messages.send(
             sender,
             "messages.commands.reset.success",
             messages.placeholder("data_key", dataKey),
-            messages.placeholder("target", target.resolvedScope().displayTarget()),
+            messages.placeholder("target", resolvedScope.displayTarget()),
             messages.placeholder("value", resetValue)
-        );
-        return true;
+        ));
     }
 }

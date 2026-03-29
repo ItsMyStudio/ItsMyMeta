@@ -1,19 +1,29 @@
 package studio.itsmy.itsmydata.commands.subcommands;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.bukkit.command.CommandSender;
 import studio.itsmy.itsmydata.commands.DataCommandTargetResolver;
 import studio.itsmy.itsmydata.data.DataDefinition;
 import studio.itsmy.itsmydata.message.MessageService;
 import studio.itsmy.itsmydata.data.DataService;
 import studio.itsmy.itsmydata.scope.ResolvedScope;
+import studio.itsmy.itsmydata.task.TaskDispatcher;
 
 public abstract class AbstractDataSubcommand implements DataSubcommand {
 
+    private final TaskDispatcher taskDispatcher;
+    private final Logger logger;
     protected final MessageService messages;
     protected final DataService dataService;
     private final DataCommandTargetResolver targetResolver;
 
-    protected AbstractDataSubcommand(DataService dataService, MessageService messages) {
+    protected AbstractDataSubcommand(TaskDispatcher taskDispatcher, Logger logger, DataService dataService, MessageService messages) {
+        this.taskDispatcher = taskDispatcher;
+        this.logger = logger;
         this.dataService = dataService;
         this.messages = messages;
         this.targetResolver = new DataCommandTargetResolver();
@@ -53,52 +63,21 @@ public abstract class AbstractDataSubcommand implements DataSubcommand {
         return targetResolver.resolveForWrite(sender, definition, args, 2);
     }
 
-    protected Object getValue(CommandSender sender, String dataKey, DataCommandTargetResolver.ResolvedDataTarget target) {
-        ResolvedScope resolvedScope = target.resolvedScope();
-        if (resolvedScope.placeholderPlayer() != null) {
-            return dataService.getValue(resolvedScope.placeholderPlayer(), resolvedScope.scope(), dataKey);
-        }
-        return dataService.getValue(sender, resolvedScope.scope(), dataKey);
-    }
-
-    protected Object getDefaultValue(CommandSender sender, String dataKey, DataCommandTargetResolver.ResolvedDataTarget target) {
-        ResolvedScope resolvedScope = target.resolvedScope();
-        if (resolvedScope.placeholderPlayer() != null) {
-            return dataService.getDefaultValue(resolvedScope.placeholderPlayer(), dataKey, resolvedScope.scope());
-        }
-        return dataService.getDefaultValue(sender, dataKey, resolvedScope.scope());
-    }
-
-    protected Object setValue(CommandSender sender, String dataKey, Object value, DataCommandTargetResolver.ResolvedDataTarget target) {
-        ResolvedScope resolvedScope = target.resolvedScope();
-        if (resolvedScope.placeholderPlayer() != null) {
-            return dataService.setValue(resolvedScope.placeholderPlayer(), resolvedScope.scope(), dataKey, value);
-        }
-        return dataService.setValue(sender, resolvedScope.scope(), dataKey, value);
-    }
-
-    protected Object resetValue(CommandSender sender, String dataKey, DataCommandTargetResolver.ResolvedDataTarget target) {
-        ResolvedScope resolvedScope = target.resolvedScope();
-        if (resolvedScope.placeholderPlayer() != null) {
-            return dataService.resetValue(resolvedScope.placeholderPlayer(), resolvedScope.scope(), dataKey);
-        }
-        return dataService.resetValue(sender, resolvedScope.scope(), dataKey);
-    }
-
-    protected Object giveValue(CommandSender sender, String dataKey, String amount, DataCommandTargetResolver.ResolvedDataTarget target) {
-        ResolvedScope resolvedScope = target.resolvedScope();
-        if (resolvedScope.placeholderPlayer() != null) {
-            return dataService.giveValue(resolvedScope.placeholderPlayer(), resolvedScope.scope(), dataKey, amount);
-        }
-        return dataService.giveValue(sender, resolvedScope.scope(), dataKey, amount);
-    }
-
-    protected Object takeValue(CommandSender sender, String dataKey, String amount, DataCommandTargetResolver.ResolvedDataTarget target) {
-        ResolvedScope resolvedScope = target.resolvedScope();
-        if (resolvedScope.placeholderPlayer() != null) {
-            return dataService.takeValue(resolvedScope.placeholderPlayer(), resolvedScope.scope(), dataKey, amount);
-        }
-        return dataService.takeValue(sender, resolvedScope.scope(), dataKey, amount);
+    protected <T> boolean completeAsync(CommandSender sender, CompletableFuture<T> future, Consumer<T> onSuccess) {
+        future.whenComplete((result, throwable) -> taskDispatcher.runSync(() -> {
+            if (throwable != null) {
+                Throwable unwrapped = unwrap(throwable);
+                logger.log(Level.SEVERE, "Could not execute /data " + name() + " for " + sender.getName() + ".", unwrapped);
+                messages.send(
+                    sender,
+                    "messages.errors.generic",
+                    messages.placeholder("message", unwrapped.getMessage() == null ? unwrapped.getClass().getSimpleName() : unwrapped.getMessage())
+                );
+                return;
+            }
+            onSuccess.accept(result);
+        }));
+        return true;
     }
 
     private void sendIncorrectCommand(CommandSender sender, String label, String usage) {
@@ -108,5 +87,13 @@ public abstract class AbstractDataSubcommand implements DataSubcommand {
             messages.placeholder("label", label),
             messages.placeholder("usage", usage)
         );
+    }
+
+    private Throwable unwrap(Throwable throwable) {
+        Throwable current = throwable;
+        while (current instanceof CompletionException && current.getCause() != null) {
+            current = current.getCause();
+        }
+        return current;
     }
 }

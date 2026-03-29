@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Locale;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -24,7 +25,8 @@ import studio.itsmy.itsmydata.commands.subcommands.TakeDataSubcommand;
 import studio.itsmy.itsmydata.message.MessageService;
 import studio.itsmy.itsmydata.data.DataType;
 import studio.itsmy.itsmydata.data.DataService;
-import studio.itsmy.itsmydata.scope.ScopeProviders;
+import studio.itsmy.itsmydata.scope.provider.ScopeProviders;
+import studio.itsmy.itsmydata.task.TaskDispatcher;
 
 public final class DataCommand implements CommandExecutor, TabCompleter {
 
@@ -35,19 +37,19 @@ public final class DataCommand implements CommandExecutor, TabCompleter {
     private final DataService dataService;
     private final ScopeProviders scopeProviders;
 
-    public DataCommand(DataService dataService, MessageService messages, Runnable reloadAction) {
+    public DataCommand(TaskDispatcher taskDispatcher, Logger logger, DataService dataService, MessageService messages, Runnable reloadAction) {
         this.subcommands = new LinkedHashMap<>();
         this.messages = messages;
         this.dataService = dataService;
         this.scopeProviders = new ScopeProviders();
-        register(new GetDataSubcommand(dataService, messages));
-        register(new SetDataSubcommand(dataService, messages));
-        register(new GiveDataSubcommand(dataService, messages));
-        register(new TakeDataSubcommand(dataService, messages));
-        register(new ResetDataSubcommand(dataService, messages));
-        register(new InfoDataSubcommand(dataService, messages));
-        register(new ListDataSubcommand(dataService, messages));
-        register(new ReloadDataSubcommand(dataService, messages, reloadAction));
+        register(new GetDataSubcommand(taskDispatcher, logger, dataService, messages));
+        register(new SetDataSubcommand(taskDispatcher, logger, dataService, messages));
+        register(new GiveDataSubcommand(taskDispatcher, logger, dataService, messages));
+        register(new TakeDataSubcommand(taskDispatcher, logger, dataService, messages));
+        register(new ResetDataSubcommand(taskDispatcher, logger, dataService, messages));
+        register(new InfoDataSubcommand(taskDispatcher, logger, dataService, messages));
+        register(new ListDataSubcommand(taskDispatcher, logger, dataService, messages));
+        register(new ReloadDataSubcommand(taskDispatcher, logger, dataService, messages, reloadAction));
         register(new HelpDataSubcommand(subcommands, messages));
     }
 

@@ -1,14 +1,16 @@
 package studio.itsmy.itsmydata.commands.subcommands;
 
 import java.util.stream.Collectors;
+import java.util.logging.Logger;
 import org.bukkit.command.CommandSender;
 import studio.itsmy.itsmydata.message.MessageService;
 import studio.itsmy.itsmydata.data.DataService;
+import studio.itsmy.itsmydata.task.TaskDispatcher;
 
 public final class ListDataSubcommand extends AbstractDataSubcommand {
 
-    public ListDataSubcommand(DataService dataService, MessageService messages) {
-        super(dataService, messages);
+    public ListDataSubcommand(TaskDispatcher taskDispatcher, Logger logger, DataService dataService, MessageService messages) {
+        super(taskDispatcher, logger, dataService, messages);
     }
 
     @Override

@@ -38,10 +38,11 @@ public final class DataRegistry {
             ScopeType scopeType = ScopeType.fromConfigValue(rawScope);
 
             String rawType = definitionSection.getString("type", "string");
-            ResolvedDataType resolvedDataType = resolveDataType(rawType, definitionSection);
-            DataType dataType = resolvedDataType.dataType();
+            DataType dataType = DataType.fromConfigValue(rawType);
 
-            Object defaultValue = normalizeDefaultValue(definitionSection.get("default"), rawType, resolvedDataType.dataType());
+            boolean decimal = definitionSection.getBoolean("decimal", false);
+
+            Object defaultValue = definitionSection.get("default");
             Double minValue = definitionSection.contains("min") ? definitionSection.getDouble("min") : null;
             Double maxValue = definitionSection.contains("max") ? definitionSection.getDouble("max") : null;
             LeaderboardSettings leaderboardSettings = loadLeaderboardSettings(definitionSection);
@@ -51,7 +52,7 @@ public final class DataRegistry {
                 new DataDefinition(
                     key,
                     dataType,
-                    resolvedDataType.decimal(),
+                    decimal,
                     scopeType,
                     defaultValue,
                     minValue,
@@ -60,28 +61,6 @@ public final class DataRegistry {
                 )
             );
         }
-    }
-
-    private ResolvedDataType resolveDataType(String rawType, ConfigurationSection definitionSection) {
-        String normalizedType = rawType.trim().toLowerCase();
-        return switch (normalizedType) {
-            case "integer" -> new ResolvedDataType(DataType.NUMBER, false);
-            case "double" -> new ResolvedDataType(DataType.NUMBER, true);
-            case "boolean" -> new ResolvedDataType(DataType.STRING, false);
-            case "number" -> new ResolvedDataType(DataType.NUMBER, definitionSection.getBoolean("decimal", false));
-            case "string" -> new ResolvedDataType(DataType.STRING, false);
-            default -> throw new IllegalArgumentException("Unknown data type: " + rawType);
-        };
-    }
-
-    private Object normalizeDefaultValue(Object defaultValue, String rawType, DataType dataType) {
-        if (defaultValue == null) {
-            return null;
-        }
-        if (dataType == DataType.STRING && rawType.trim().equalsIgnoreCase("boolean")) {
-            return String.valueOf(defaultValue);
-        }
-        return defaultValue;
     }
 
     private LeaderboardSettings loadLeaderboardSettings(ConfigurationSection definitionSection) {
@@ -110,8 +89,5 @@ public final class DataRegistry {
 
     public Collection<DataDefinition> all() {
         return definitions.values();
-    }
-
-    private record ResolvedDataType(DataType dataType, boolean decimal) {
     }
 }

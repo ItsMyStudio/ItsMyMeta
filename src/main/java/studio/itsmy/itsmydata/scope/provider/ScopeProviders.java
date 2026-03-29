@@ -1,9 +1,10 @@
-package studio.itsmy.itsmydata.scope;
+package studio.itsmy.itsmydata.scope.provider;
 
 import java.util.EnumMap;
 import java.util.Map;
 import org.bukkit.command.CommandSender;
 import org.bukkit.OfflinePlayer;
+import studio.itsmy.itsmydata.scope.*;
 
 public final class ScopeProviders {
 

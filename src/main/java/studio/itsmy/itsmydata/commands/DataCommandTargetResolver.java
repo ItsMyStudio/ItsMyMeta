@@ -4,7 +4,7 @@ import org.bukkit.command.CommandSender;
 import studio.itsmy.itsmydata.data.DataDefinition;
 import studio.itsmy.itsmydata.scope.CommandResolvedScope;
 import studio.itsmy.itsmydata.scope.ResolvedScope;
-import studio.itsmy.itsmydata.scope.ScopeProviders;
+import studio.itsmy.itsmydata.scope.provider.ScopeProviders;
 
 public final class DataCommandTargetResolver {
 

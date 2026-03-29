@@ -1,4 +1,4 @@
-package studio.itsmy.itsmydata.scope;
+package studio.itsmy.itsmydata.scope.provider;
 
 import java.util.List;
 import java.util.UUID;
@@ -6,6 +6,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import studio.itsmy.itsmydata.scope.*;
 
 public final class PlayerScopeProvider implements ScopeProvider {
 

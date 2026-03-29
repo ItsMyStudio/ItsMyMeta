@@ -1,4 +1,4 @@
-package studio.itsmy.itsmydata.scope;
+package studio.itsmy.itsmydata.scope.provider;
 
 import com.bgsoftware.superiorskyblock.api.SuperiorSkyblockAPI;
 import com.bgsoftware.superiorskyblock.api.island.Island;
@@ -9,6 +9,10 @@ import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import studio.itsmy.itsmydata.scope.CommandResolvedScope;
+import studio.itsmy.itsmydata.scope.ResolvedScope;
+import studio.itsmy.itsmydata.scope.ScopeContext;
+import studio.itsmy.itsmydata.scope.ScopeType;
 
 public final class SuperiorSkyblockScopeProvider implements ScopeProvider {
 

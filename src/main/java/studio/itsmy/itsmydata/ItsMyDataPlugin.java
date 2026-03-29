@@ -1,6 +1,7 @@
 package studio.itsmy.itsmydata;
 
 import java.util.Objects;
+import java.util.logging.Level;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
@@ -15,6 +16,7 @@ import studio.itsmy.itsmydata.data.DataRegistry;
 import studio.itsmy.itsmydata.data.DataService;
 import studio.itsmy.itsmydata.papi.ItsMyDataExpansion;
 import studio.itsmy.itsmydata.scope.ScopeResolver;
+import studio.itsmy.itsmydata.task.TaskDispatcher;
 
 public final class ItsMyDataPlugin extends JavaPlugin {
 
@@ -24,6 +26,8 @@ public final class ItsMyDataPlugin extends JavaPlugin {
     private MessageService messageService;
     private LeaderboardService leaderboardService;
     private BukkitTask dynamicLeaderboardRefreshTask;
+    private ItsMyDataExpansion placeholderExpansion;
+    private TaskDispatcher taskDispatcher;
 
     @Override
     public void onEnable() {
@@ -37,14 +41,15 @@ public final class ItsMyDataPlugin extends JavaPlugin {
         DatabaseSettings databaseSettings = new DatabaseSettingsLoader().load(getConfig());
         this.dataStore = new JdbcDataStore(this, databaseSettings);
         dataStore.initialize();
+        this.taskDispatcher = new TaskDispatcher(this);
 
         ScopeResolver scopeResolver = new ScopeResolver();
         this.leaderboardService = new LeaderboardService(dataStore);
-        this.dataService = new DataService(dataRegistry, scopeResolver, dataStore, leaderboardService);
+        this.dataService = new DataService(taskDispatcher, dataRegistry, scopeResolver, dataStore, leaderboardService, messageService);
         dataService.validateDefinitions();
 
         PluginCommand command = Objects.requireNonNull(getCommand("data"), "data command is not defined");
-        DataCommand dataCommand = new DataCommand(dataService, messageService, this::reloadPluginState);
+        DataCommand dataCommand = new DataCommand(taskDispatcher, getLogger(), dataService, messageService, this::reloadPluginState);
         command.setExecutor(dataCommand);
         command.setTabCompleter(dataCommand);
         registerScopeCleanupListeners();
@@ -77,7 +82,8 @@ public final class ItsMyDataPlugin extends JavaPlugin {
             return;
         }
 
-        new ItsMyDataExpansion(this, dataService).register();
+        this.placeholderExpansion = new ItsMyDataExpansion(this, dataService);
+        placeholderExpansion.register();
         messageService.info("logs.placeholderapi-registered");
     }
 
@@ -91,6 +97,12 @@ public final class ItsMyDataPlugin extends JavaPlugin {
         reloadConfig();
         messageService.load("lang.yml");
         dataRegistry.load(getConfig());
+        DatabaseSettings databaseSettings = new DatabaseSettingsLoader().load(getConfig());
+        dataStore.reload(databaseSettings);
+        dataService.resetDynamicRefreshState();
+        if (placeholderExpansion != null) {
+            placeholderExpansion.clearCaches();
+        }
         dataService.validateDefinitions();
         restartDynamicLeaderboardRefreshTask();
         messageService.info("logs.plugin-reloaded", messageService.placeholder("count", dataRegistry.size()));
@@ -106,9 +118,12 @@ public final class ItsMyDataPlugin extends JavaPlugin {
         }
 
         long periodTicks = refreshMinutes * 60L * 20L;
-        this.dynamicLeaderboardRefreshTask = getServer().getScheduler().runTaskTimerAsynchronously(
+        this.dynamicLeaderboardRefreshTask = getServer().getScheduler().runTaskTimer(
             this,
-            dataService::refreshDynamicLeaderboards,
+            () -> dataService.refreshDynamicLeaderboardsAsync().exceptionally(exception -> {
+                getLogger().log(Level.SEVERE, "Could not refresh dynamic leaderboard values.", unwrapCompletionException(exception));
+                return null;
+            }),
             periodTicks,
             periodTicks
         );
@@ -120,5 +135,13 @@ public final class ItsMyDataPlugin extends JavaPlugin {
 
     public MessageService getMessageService() {
         return messageService;
+    }
+
+    private Throwable unwrapCompletionException(Throwable throwable) {
+        Throwable current = throwable;
+        while (current.getCause() != null && current instanceof java.util.concurrent.CompletionException) {
+            current = current.getCause();
+        }
+        return current;
     }
 }

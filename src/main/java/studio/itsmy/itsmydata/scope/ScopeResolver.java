@@ -1,7 +1,7 @@
 package studio.itsmy.itsmydata.scope;
 
 import org.bukkit.OfflinePlayer;
-import org.bukkit.command.CommandSender;
+import studio.itsmy.itsmydata.scope.provider.ScopeProviders;
 
 public final class ScopeResolver {
 
@@ -9,10 +9,6 @@ public final class ScopeResolver {
 
     public ScopeResolver() {
         this.scopeProviders = new ScopeProviders();
-    }
-
-    public ScopeContext resolve(CommandSender sender, ScopeType scopeType) {
-        return scopeProviders.resolveFromSender(sender, scopeType).scope();
     }
 
     public ScopeContext resolve(OfflinePlayer player, ScopeType scopeType) {

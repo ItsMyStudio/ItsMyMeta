@@ -1,4 +1,4 @@
-package studio.itsmy.itsmydata.scope;
+package studio.itsmy.itsmydata.scope.provider;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -7,6 +7,10 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import studio.itsmy.itsmydata.scope.CommandResolvedScope;
+import studio.itsmy.itsmydata.scope.ResolvedScope;
+import studio.itsmy.itsmydata.scope.ScopeContext;
+import studio.itsmy.itsmydata.scope.ScopeType;
 
 public final class WorldScopeProvider implements ScopeProvider {
 

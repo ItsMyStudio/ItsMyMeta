@@ -1,15 +1,23 @@
 package studio.itsmy.itsmydata.commands.subcommands;
 
+import java.util.logging.Logger;
 import org.bukkit.command.CommandSender;
 import studio.itsmy.itsmydata.message.MessageService;
 import studio.itsmy.itsmydata.data.DataService;
+import studio.itsmy.itsmydata.task.TaskDispatcher;
 
 public final class ReloadDataSubcommand extends AbstractDataSubcommand {
 
     private final Runnable reloadAction;
 
-    public ReloadDataSubcommand(DataService dataService, MessageService messages, Runnable reloadAction) {
-        super(dataService, messages);
+    public ReloadDataSubcommand(
+        TaskDispatcher taskDispatcher,
+        Logger logger,
+        DataService dataService,
+        MessageService messages,
+        Runnable reloadAction
+    ) {
+        super(taskDispatcher, logger, dataService, messages);
         this.reloadAction = reloadAction;
     }
 

@@ -3,8 +3,8 @@ package studio.itsmy.itsmydata.db;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import java.io.File;
-import java.sql.DatabaseDataData;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -22,8 +22,8 @@ import studio.itsmy.itsmydata.scope.ScopeType;
 public final class JdbcDataStore implements DataStore {
 
     private final JavaPlugin plugin;
-    private final DatabaseSettings settings;
-    private HikariDataSource dataSource;
+    private volatile DatabaseSettings settings;
+    private volatile HikariDataSource dataSource;
 
     public JdbcDataStore(JavaPlugin plugin, DatabaseSettings settings) {
         this.plugin = plugin;
@@ -31,17 +31,37 @@ public final class JdbcDataStore implements DataStore {
     }
 
     @Override
-    public void initialize() {
+    public synchronized void initialize() {
+        replaceDataSource(settings);
+    }
+
+    public synchronized void reload(DatabaseSettings settings) {
+        this.settings = settings;
+        replaceDataSource(settings);
+    }
+
+    private void replaceDataSource(DatabaseSettings databaseSettings) {
         HikariConfig hikariConfig = new HikariConfig();
         hikariConfig.setPoolName("ItsMyDataPool");
 
-        switch (settings.type()) {
-            case SQLITE -> configureSqlite(hikariConfig);
-            case MYSQL -> configureMysql(hikariConfig);
+        switch (databaseSettings.type()) {
+            case SQLITE -> configureSqlite(hikariConfig, databaseSettings);
+            case MYSQL -> configureMysql(hikariConfig, databaseSettings);
         }
 
-        this.dataSource = new HikariDataSource(hikariConfig);
-        createTables();
+        HikariDataSource newDataSource = new HikariDataSource(hikariConfig);
+        try {
+            createTables(newDataSource, databaseSettings);
+        } catch (RuntimeException exception) {
+            newDataSource.close();
+            throw exception;
+        }
+
+        HikariDataSource previousDataSource = this.dataSource;
+        this.dataSource = newDataSource;
+        if (previousDataSource != null) {
+            previousDataSource.close();
+        }
     }
 
     @Override
@@ -52,7 +72,7 @@ public final class JdbcDataStore implements DataStore {
             WHERE data_key = ? AND scope_type = ? AND scope_id = ?
             """;
 
-        try (Connection connection = dataSource.getConnection();
+        try (Connection connection = requireDataSource().getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, dataKey);
             statement.setString(2, scope.type().name());
@@ -71,7 +91,7 @@ public final class JdbcDataStore implements DataStore {
 
     @Override
     public void saveValueAndSyncLeaderboard(ScopeContext scope, String dataKey, String value, Double leaderboardValue) {
-        try (Connection connection = dataSource.getConnection()) {
+        try (Connection connection = requireDataSource().getConnection()) {
             connection.setAutoCommit(false);
             try {
                 Optional<String> currentValue = findValue(connection, scope, dataKey);
@@ -99,7 +119,7 @@ public final class JdbcDataStore implements DataStore {
 
     @Override
     public void deleteValueAndSyncLeaderboard(ScopeContext scope, String dataKey, Double leaderboardValue) {
-        try (Connection connection = dataSource.getConnection()) {
+        try (Connection connection = requireDataSource().getConnection()) {
             connection.setAutoCommit(false);
             try {
                 Optional<String> currentValue = findValue(connection, scope, dataKey);
@@ -127,7 +147,7 @@ public final class JdbcDataStore implements DataStore {
 
     @Override
     public void saveLeaderboardValue(ScopeContext scope, String dataKey, double numericValue) {
-        try (Connection connection = dataSource.getConnection();
+        try (Connection connection = requireDataSource().getConnection();
              PreparedStatement statement = connection.prepareStatement(leaderboardUpsertSql())) {
             bindLeaderboardUpsert(statement, scope, dataKey, numericValue);
             statement.executeUpdate();
@@ -138,7 +158,7 @@ public final class JdbcDataStore implements DataStore {
 
     @Override
     public void deleteScope(ScopeContext scope) {
-        try (Connection connection = dataSource.getConnection()) {
+        try (Connection connection = requireDataSource().getConnection()) {
             connection.setAutoCommit(false);
             try {
                 try (PreparedStatement valuesStatement = connection.prepareStatement(deleteScopeValuesSql());
@@ -172,7 +192,7 @@ public final class JdbcDataStore implements DataStore {
             """;
 
         List<LeaderboardEntry> entries = new ArrayList<>();
-        try (Connection connection = dataSource.getConnection();
+        try (Connection connection = requireDataSource().getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, dataKey);
             statement.setInt(2, limit);
@@ -205,7 +225,7 @@ public final class JdbcDataStore implements DataStore {
             LIMIT ?
             """;
 
-        try (Connection connection = dataSource.getConnection();
+        try (Connection connection = requireDataSource().getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, dataKey);
             statement.setInt(2, limit);
@@ -235,7 +255,7 @@ public final class JdbcDataStore implements DataStore {
             WHERE data_key = ?
             """;
 
-        try (Connection connection = dataSource.getConnection();
+        try (Connection connection = requireDataSource().getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, dataKey);
 
@@ -259,7 +279,7 @@ public final class JdbcDataStore implements DataStore {
             """;
 
         List<ScopeContext> scopes = new ArrayList<>();
-        try (Connection connection = dataSource.getConnection();
+        try (Connection connection = requireDataSource().getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, dataKey);
 
@@ -279,7 +299,8 @@ public final class JdbcDataStore implements DataStore {
 
     @Override
     public List<ScopeContext> getDynamicValueScopes(String dataKey) {
-        String sql = switch (settings.type()) {
+        DatabaseSettings currentSettings = settings;
+        String sql = switch (currentSettings.type()) {
             case SQLITE -> """
                 SELECT scope_type, scope_id
                 FROM data_values
@@ -297,7 +318,7 @@ public final class JdbcDataStore implements DataStore {
         };
 
         List<ScopeContext> scopes = new ArrayList<>();
-        try (Connection connection = dataSource.getConnection();
+        try (Connection connection = requireDataSource().getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, dataKey);
 
@@ -316,34 +337,35 @@ public final class JdbcDataStore implements DataStore {
     }
 
     @Override
-    public void close() {
+    public synchronized void close() {
         if (dataSource != null) {
             dataSource.close();
+            dataSource = null;
         }
     }
 
-    private void configureSqlite(HikariConfig hikariConfig) {
+    private void configureSqlite(HikariConfig hikariConfig, DatabaseSettings databaseSettings) {
         if (!plugin.getDataFolder().exists()) {
             plugin.getDataFolder().mkdirs();
         }
 
-        File sqliteFile = new File(plugin.getDataFolder(), settings.sqliteFile());
+        File sqliteFile = new File(plugin.getDataFolder(), databaseSettings.sqliteFile());
         hikariConfig.setJdbcUrl("jdbc:sqlite:" + sqliteFile.getAbsolutePath());
         hikariConfig.setMaximumPoolSize(1);
         hikariConfig.addDataSourceProperty("foreign_keys", "true");
     }
 
-    private void configureMysql(HikariConfig hikariConfig) {
-        String jdbcUrl = "jdbc:mysql://" + settings.host() + ":" + settings.port() + "/" + settings.database()
+    private void configureMysql(HikariConfig hikariConfig, DatabaseSettings databaseSettings) {
+        String jdbcUrl = "jdbc:mysql://" + databaseSettings.host() + ":" + databaseSettings.port() + "/" + databaseSettings.database()
             + "?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=utf8";
 
         hikariConfig.setJdbcUrl(jdbcUrl);
-        hikariConfig.setUsername(settings.username());
-        hikariConfig.setPassword(settings.password());
+        hikariConfig.setUsername(databaseSettings.username());
+        hikariConfig.setPassword(databaseSettings.password());
         hikariConfig.setMaximumPoolSize(10);
     }
 
-    private void createTables() {
+    private void createTables(HikariDataSource dataSource, DatabaseSettings databaseSettings) {
         String dataValuesSql = """
             CREATE TABLE IF NOT EXISTS data_values (
                 data_key VARCHAR(100) NOT NULL,
@@ -364,7 +386,7 @@ public final class JdbcDataStore implements DataStore {
                 PRIMARY KEY (data_key, scope_type, scope_id)
             )
             """;
-        String leaderboardIndexSql = switch (settings.type()) {
+        String leaderboardIndexSql = switch (databaseSettings.type()) {
             case SQLITE -> """
                 CREATE INDEX IF NOT EXISTS idx_data_leaderboard_value
                 ON data_leaderboard_cache (data_key, numeric_value DESC, scope_id ASC)
@@ -500,8 +522,8 @@ public final class JdbcDataStore implements DataStore {
     }
 
     private boolean indexExists(Connection connection, String tableName, String indexName) throws SQLException {
-        DatabaseDataData dataData = connection.getDataData();
-        try (ResultSet resultSet = dataData.getIndexInfo(null, null, tableName, false, false)) {
+        DatabaseMetaData metadata = connection.getMetaData();
+        try (ResultSet resultSet = metadata.getIndexInfo(null, null, tableName, false, false)) {
             while (resultSet.next()) {
                 String existingIndexName = resultSet.getString("INDEX_NAME");
                 if (existingIndexName != null && existingIndexName.equalsIgnoreCase(indexName)) {
@@ -510,6 +532,14 @@ public final class JdbcDataStore implements DataStore {
             }
         }
         return false;
+    }
+
+    private HikariDataSource requireDataSource() {
+        HikariDataSource currentDataSource = dataSource;
+        if (currentDataSource == null) {
+            throw new IllegalStateException("Data store has not been initialized.");
+        }
+        return currentDataSource;
     }
 
     private Optional<String> findValue(Connection connection, ScopeContext scope, String dataKey) throws SQLException {

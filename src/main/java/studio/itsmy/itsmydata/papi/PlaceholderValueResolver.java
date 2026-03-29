@@ -16,16 +16,6 @@ public final class PlaceholderValueResolver {
     private static volatile Method cachedPlaceholderMethod;
     private static volatile boolean placeholderApiUnavailable;
 
-    public String resolve(CommandSender sender, String value) {
-        if (!containsPlaceholderMarkers(value)) {
-            return value;
-        }
-        if (!(sender instanceof Player player)) {
-            return value;
-        }
-        return resolve((OfflinePlayer) player, value);
-    }
-
     public String resolve(OfflinePlayer player, String value) {
         if (!containsPlaceholderMarkers(value)) {
             return value;
@@ -44,8 +34,12 @@ public final class PlaceholderValueResolver {
         }
     }
 
-    public boolean containsPlaceholderMarkers(String value) {
-        return PLACEHOLDER_PATTERN.matcher(value).find();
+    public boolean containsPlaceholderMarkers(Object value) {
+        if (!(value instanceof String stringValue)) {
+            return false;
+        }
+
+        return PLACEHOLDER_PATTERN.matcher(stringValue).find();
     }
 
     private Method resolvePlaceholderMethod() {
@@ -82,6 +76,6 @@ public final class PlaceholderValueResolver {
 
     private boolean isPlaceholderApiAvailable() {
         PluginManager pluginManager = Bukkit.getPluginManager();
-        return pluginManager != null && pluginManager.getPlugin("PlaceholderAPI") != null;
+        return pluginManager.getPlugin("PlaceholderAPI") != null;
     }
 }

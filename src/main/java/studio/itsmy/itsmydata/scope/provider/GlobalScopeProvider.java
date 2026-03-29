@@ -1,9 +1,10 @@
-package studio.itsmy.itsmydata.scope;
+package studio.itsmy.itsmydata.scope.provider;
 
 import java.util.List;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import studio.itsmy.itsmydata.scope.*;
 
 public final class GlobalScopeProvider implements ScopeProvider {
 

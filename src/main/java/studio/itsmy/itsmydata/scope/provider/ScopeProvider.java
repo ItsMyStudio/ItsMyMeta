@@ -1,8 +1,11 @@
-package studio.itsmy.itsmydata.scope;
+package studio.itsmy.itsmydata.scope.provider;
 
 import java.util.List;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
+import studio.itsmy.itsmydata.scope.CommandResolvedScope;
+import studio.itsmy.itsmydata.scope.ResolvedScope;
+import studio.itsmy.itsmydata.scope.ScopeType;
 
 public interface ScopeProvider {
 

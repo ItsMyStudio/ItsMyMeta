@@ -1,16 +1,19 @@
 package studio.itsmy.itsmydata.commands.subcommands;
 
 import java.util.Arrays;
+import java.util.logging.Logger;
 import org.bukkit.command.CommandSender;
 import studio.itsmy.itsmydata.message.MessageService;
 import studio.itsmy.itsmydata.data.DataDefinition;
 import studio.itsmy.itsmydata.data.DataService;
+import studio.itsmy.itsmydata.scope.ResolvedScope;
 import studio.itsmy.itsmydata.scope.ScopeType;
+import studio.itsmy.itsmydata.task.TaskDispatcher;
 
 public final class TakeDataSubcommand extends AbstractDataSubcommand {
 
-    public TakeDataSubcommand(DataService dataService, MessageService messages) {
-        super(dataService, messages);
+    public TakeDataSubcommand(TaskDispatcher taskDispatcher, Logger logger, DataService dataService, MessageService messages) {
+        super(taskDispatcher, logger, dataService, messages);
     }
 
     @Override
@@ -54,15 +57,14 @@ public final class TakeDataSubcommand extends AbstractDataSubcommand {
         }
 
         String amount = String.join(" ", Arrays.copyOfRange(args, target.nextArgIndex(), args.length));
-        Object updatedValue = takeValue(sender, dataKey, amount, target);
-        messages.send(
+        ResolvedScope resolvedScope = target.resolvedScope();
+        return completeAsync(sender, dataService.takeValueAsync(resolvedScope, definition, amount), updatedValue -> messages.send(
             sender,
             "messages.commands.take.success",
             messages.placeholder("data_key", dataKey),
-            messages.placeholder("target", target.resolvedScope().displayTarget()),
+            messages.placeholder("target", resolvedScope.displayTarget()),
             messages.placeholder("amount", amount),
             messages.placeholder("value", updatedValue)
-        );
-        return true;
+        ));
     }
 }

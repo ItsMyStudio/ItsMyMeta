@@ -24,6 +24,7 @@ public final class ItsMyDataExpansion extends PlaceholderExpansion {
     private static final Pattern LEADERBOARD_VALUE_PATTERN = Pattern.compile("(.+)_leaderboard_(\\d+)(?:_(fixed|formatted|commas|name))?");
     private static final Pattern LEADERBOARD_POSITION_PATTERN = Pattern.compile("(.+)_leaderboard_position(?:_(percent))?");
     private static final long LEADERBOARD_CACHE_TTL_MILLIS = 3_000L;
+    private static final int MAX_CACHE_ENTRIES = 2_048;
     private static final ThreadLocal<DecimalFormat> FIXED_FORMAT = ThreadLocal.withInitial(
         () -> new DecimalFormat("0.00", DecimalFormatSymbols.getInstance(Locale.US))
     );
@@ -57,12 +58,12 @@ public final class ItsMyDataExpansion extends PlaceholderExpansion {
 
     @Override
     public @NotNull String getAuthor() {
-        return "ItsMyDesktop";
+        return "ItsMyStudio";
     }
 
     @Override
     public @NotNull String getVersion() {
-        return plugin.getPluginData().getVersion();
+        return plugin.getPluginMeta().getVersion();
     }
 
     @Override
@@ -122,13 +123,10 @@ public final class ItsMyDataExpansion extends PlaceholderExpansion {
 
         return getCachedValue(leaderboardValueCache, params, () -> {
             DataDefinition definition = dataService.getDefinition(dataKey);
-            if (position > dataService.getLeaderboardTotalEntries(dataKey)) {
-                return fallbackLeaderboardValue(player, definition, format);
-            }
             if ("name".equals(format)) {
-                return dataService.getLeaderboardName(dataKey, position);
+                return dataService.getLeaderboardName(definition, position);
             }
-            Object value = dataService.getLeaderboardValue(dataKey, position);
+            Object value = dataService.getLeaderboardValue(definition, position);
 
             if ("fixed".equals(format)) {
                 return formatFixed(value, definition.dataType());
@@ -143,27 +141,6 @@ public final class ItsMyDataExpansion extends PlaceholderExpansion {
         });
     }
 
-    private String fallbackLeaderboardValue(OfflinePlayer player, DataDefinition definition, String format) {
-        if ("name".equals(format)) {
-            return plugin.getMessageService().raw("messages.common.none");
-        }
-
-        Object defaultValue = player != null
-            ? dataService.getDefaultValue(player, definition.key())
-            : definition.defaultValue();
-
-        if ("fixed".equals(format)) {
-            return formatFixed(defaultValue, definition.dataType());
-        }
-        if ("formatted".equals(format)) {
-            return formatCompact(defaultValue, definition.dataType());
-        }
-        if ("commas".equals(format)) {
-            return formatWithCommas(defaultValue, definition.dataType());
-        }
-        return String.valueOf(defaultValue);
-    }
-
     private String resolveLeaderboardPositionPlaceholder(OfflinePlayer player, String params) {
         Matcher matcher = LEADERBOARD_POSITION_PATTERN.matcher(params);
         if (!matcher.matches()) {
@@ -176,8 +153,9 @@ public final class ItsMyDataExpansion extends PlaceholderExpansion {
         String dataKey = matcher.group(1);
         String mode = matcher.group(2);
         String cacheKey = dataKey + "|" + player.getUniqueId() + "|" + (mode == null ? "rank" : mode);
+        DataDefinition definition = dataService.getDefinition(dataKey);
         return getCachedValue(leaderboardPositionCache, cacheKey, () -> {
-            LeaderboardPlacement placement = dataService.getLeaderboardPlacement(player, dataKey);
+            LeaderboardPlacement placement = dataService.getLeaderboardPlacement(player, definition);
             return "percent".equals(mode) ? placement.displayPercent() : placement.displayRank();
         });
     }
@@ -188,10 +166,11 @@ public final class ItsMyDataExpansion extends PlaceholderExpansion {
         }
 
         String dataKey = params.substring(0, params.length() - "_leaderboard_total_players".length());
+        DataDefinition definition = dataService.getDefinition(dataKey);
         return getCachedValue(
             leaderboardTotalPlayersCache,
             dataKey,
-            () -> String.valueOf(dataService.getLeaderboardTotalEntries(dataKey))
+            () -> String.valueOf(dataService.getLeaderboardTotalEntries(definition))
         );
     }
 
@@ -223,7 +202,7 @@ public final class ItsMyDataExpansion extends PlaceholderExpansion {
     }
 
     private String formatFixed(Object value, DataType dataType) {
-        if (!isNumeric(dataType)) {
+        if (dataType == DataType.STRING) {
             return String.valueOf(value);
         }
 
@@ -231,7 +210,7 @@ public final class ItsMyDataExpansion extends PlaceholderExpansion {
     }
 
     private String formatWithCommas(Object value, DataType dataType) {
-        if (!isNumeric(dataType)) {
+        if (dataType == DataType.STRING) {
             return String.valueOf(value);
         }
 
@@ -239,7 +218,7 @@ public final class ItsMyDataExpansion extends PlaceholderExpansion {
     }
 
     private String formatCompact(Object value, DataType dataType) {
-        if (!isNumeric(dataType)) {
+        if (dataType == DataType.STRING) {
             return String.valueOf(value);
         }
 
@@ -253,13 +232,9 @@ public final class ItsMyDataExpansion extends PlaceholderExpansion {
             return stripTrailingZeros(number / 1_000_000D) + "M";
         }
         if (absolute >= 1_000) {
-            return stripTrailingZeros(number / 1_000D) + "K";
+            return stripTrailingZeros(number / 1_000D) + "k";
         }
         return stripTrailingZeros(number);
-    }
-
-    private boolean isNumeric(DataType dataType) {
-        return dataType == DataType.NUMBER;
     }
 
     private double asDouble(Object value) {
@@ -274,21 +249,40 @@ public final class ItsMyDataExpansion extends PlaceholderExpansion {
     }
 
     private String getCachedValue(Map<String, CachedValue<String>> cache, String key, ValueSupplier supplier) {
-        CachedValue<String> cachedValue = cache.get(key);
         long now = System.currentTimeMillis();
+        CachedValue<String> cachedValue = cache.get(key);
         if (cachedValue != null && cachedValue.expiresAt() > now) {
             return cachedValue.value();
         }
 
+        pruneCache(cache, now);
         String value = supplier.get();
         cache.put(key, new CachedValue<>(value, now + LEADERBOARD_CACHE_TTL_MILLIS));
         return value;
+    }
+
+    public void clearCaches() {
+        leaderboardValueCache.clear();
+        leaderboardPositionCache.clear();
+        leaderboardTotalPlayersCache.clear();
+        loggedErrors.clear();
     }
 
     private void logPlaceholderFailure(String params, RuntimeException exception) {
         String errorKey = params + "|" + exception.getClass().getName() + "|" + exception.getMessage();
         if (loggedErrors.add(errorKey)) {
             plugin.getLogger().fine("Failed to resolve PlaceholderAPI placeholder '" + params + "': " + exception.getMessage());
+        }
+    }
+
+    private void pruneCache(Map<String, CachedValue<String>> cache, long now) {
+        if (cache.size() < MAX_CACHE_ENTRIES) {
+            return;
+        }
+
+        cache.entrySet().removeIf(entry -> entry.getValue().expiresAt() <= now);
+        if (cache.size() >= MAX_CACHE_ENTRIES) {
+            cache.clear();
         }
     }
 
