@@ -31,7 +31,10 @@ public record DataDefinition(
         if (dataType == DataType.STRING) {
             return "";
         }
-        return decimal ? 0D : 0;
+        if (decimal) {
+            return 0D;
+        }
+        return 0;
     }
 
     private static void validateBoundsConfiguration(String key, DataType dataType, Double minValue, Double maxValue) {

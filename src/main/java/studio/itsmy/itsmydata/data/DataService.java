@@ -16,7 +16,6 @@ import studio.itsmy.itsmydata.leaderboard.LeaderboardPlacement;
 import studio.itsmy.itsmydata.leaderboard.LeaderboardService;
 import studio.itsmy.itsmydata.leaderboard.LeaderboardSettings;
 import studio.itsmy.itsmydata.message.MessageService;
-import studio.itsmy.itsmydata.papi.PlaceholderValueResolver;
 import studio.itsmy.itsmydata.scope.ResolvedScope;
 import studio.itsmy.itsmydata.scope.ScopeContext;
 import studio.itsmy.itsmydata.scope.ScopeResolver;
@@ -31,8 +30,7 @@ public final class DataService {
     private final DataStore dataStore;
     private final LeaderboardService leaderboardService;
     private final MessageService messageService;
-    private final PlaceholderValueResolver placeholderValueResolver;
-    private final NumericExpressionResolver numericExpressionResolver;
+    private final DataValueResolver valueResolver;
     private final ConcurrentMap<String, Long> dynamicLeaderboardRefreshTimestamps;
     private final AtomicBoolean dynamicRefreshInProgress;
 
@@ -50,8 +48,7 @@ public final class DataService {
         this.dataStore = dataStore;
         this.leaderboardService = leaderboardService;
         this.messageService = messageService;
-        this.placeholderValueResolver = new PlaceholderValueResolver();
-        this.numericExpressionResolver = new NumericExpressionResolver();
+        this.valueResolver = new DataValueResolver();
         this.dynamicLeaderboardRefreshTimestamps = new ConcurrentHashMap<>();
         this.dynamicRefreshInProgress = new AtomicBoolean(false);
     }
@@ -59,20 +56,17 @@ public final class DataService {
     public Object getValue(OfflinePlayer player, String dataKey) {
         DataDefinition definition = dataRegistry.getRequired(dataKey);
         ScopeContext scope = scopeResolver.resolve(player, definition.scopeType());
-
-        return dataStore.findValue(scope, definition.key())
-            .map(value -> resolveEffectiveValue(player, definition, value))
-            .orElseGet(() -> resolveEffectiveValue(player, definition, definition.defaultValue()));
+        return valueResolver.resolveStoredValue(player, definition, dataStore.findValue(scope, definition.key()));
     }
 
     public Object getDefaultValue(OfflinePlayer player, String dataKey) {
         DataDefinition definition = dataRegistry.getRequired(dataKey);
-        return resolveEffectiveValue(player, definition, definition.defaultValue());
+        return valueResolver.resolveDefaultValue(player, definition);
     }
 
     public CompletableFuture<Object> getValueAsync(ResolvedScope resolvedScope, DataDefinition definition) {
         return taskDispatcher.callAsync(() -> dataStore.findValue(resolvedScope.scope(), definition.key()))
-            .thenCompose(storedValue -> taskDispatcher.callSync(() -> resolveStoredValue(resolvedScope.player(), definition, storedValue)));
+            .thenCompose(storedValue -> taskDispatcher.callSync(() -> valueResolver.resolveStoredValue(resolvedScope.player(), definition, storedValue)));
     }
 
     public CompletableFuture<Object> setValueAsync(ResolvedScope resolvedScope, DataDefinition definition, Object value) {
@@ -124,7 +118,7 @@ public final class DataService {
         }
 
         LeaderboardEntry entry = leaderboardService.getEntry(definition.key(), position);
-        return castNumber(entry.numericValue(), definition);
+        return valueResolver.castNumber(entry.numericValue(), definition);
     }
 
     public String getLeaderboardName(DataDefinition definition, int position) {
@@ -182,38 +176,6 @@ public final class DataService {
         dynamicLeaderboardRefreshTimestamps.clear();
     }
 
-    private Object applyBounds(Object value, DataDefinition definition) {
-        if (definition.dataType() != DataType.NUMBER) {
-            return value;
-        }
-
-        double numericValue = toDouble(value);
-        if (definition.minValue() != null) {
-            numericValue = Math.max(numericValue, definition.minValue());
-        }
-        if (definition.maxValue() != null) {
-            numericValue = Math.min(numericValue, definition.maxValue());
-        }
-        return castNumber(numericValue, definition);
-    }
-
-    private double toDouble(Object value) {
-        if (value instanceof Number number) {
-            return number.doubleValue();
-        }
-        throw new IllegalStateException("Value is not numeric.");
-    }
-
-    private Object castNumber(double value, DataDefinition definition) {
-        if (definition.decimal()) {
-            return value;
-        }
-        if (Math.rint(value) != value) {
-            throw new IllegalArgumentException("Data '" + definition.key() + "' requires a whole number.");
-        }
-        return (int) value;
-    }
-
     private boolean isDynamicRefreshDue(DataDefinition definition, long now) {
         int minutes = definition.leaderboardSettings().dynamicRefreshMinutes();
         if (minutes <= 0) {
@@ -240,7 +202,7 @@ public final class DataService {
         if (definition.scopeType() == ScopeType.PLAYER) {
             return;
         }
-        if (placeholderValueResolver.containsPlaceholderMarkers(rawValue)) {
+        if (valueResolver.containsPlaceholderMarkers(rawValue)) {
             throw new IllegalStateException(
                 "Numeric leaderboard data '" + definition.key() + "' cannot use PlaceholderAPI values outside player scope."
             );
@@ -264,12 +226,12 @@ public final class DataService {
 
     private Set<ScopeContext> loadDynamicRefreshScopes(DataDefinition definition) {
         List<ScopeContext> dynamicScopes = dataStore.getDynamicValueScopes(definition.key());
-        if (!placeholderValueResolver.containsPlaceholderMarkers(definition.defaultValue()) && dynamicScopes.isEmpty()) {
+        if (!valueResolver.containsPlaceholderMarkers(definition.defaultValue()) && dynamicScopes.isEmpty()) {
             return Set.of();
         }
 
         Set<ScopeContext> scopes = new LinkedHashSet<>();
-        if (placeholderValueResolver.containsPlaceholderMarkers(definition.defaultValue())) {
+        if (valueResolver.containsPlaceholderMarkers(definition.defaultValue())) {
             scopes.addAll(dataStore.getLeaderboardScopes(definition.key()));
         }
         scopes.addAll(dynamicScopes);
@@ -280,7 +242,7 @@ public final class DataService {
         return taskDispatcher.callAsync(() -> dataStore.findValue(scope, definition.key()))
             .thenCompose(storedValue -> taskDispatcher.callSync(() -> {
                 OfflinePlayer player = Bukkit.getOfflinePlayer(UUID.fromString(scope.id()));
-                return resolveStoredValue(player, definition, storedValue);
+                return valueResolver.resolveStoredValue(player, definition, storedValue);
             }))
             .thenCompose(boundedValue -> taskDispatcher.callAsync(() -> {
                 leaderboardService.update(definition, scope, boundedValue);
@@ -288,45 +250,35 @@ public final class DataService {
             }));
     }
 
-    private Object resolveEffectiveValue(OfflinePlayer player, DataDefinition definition, Object rawValue) {
-        return switch (definition.dataType()) {
-            case STRING -> resolveStringValue(player, rawValue);
-            case NUMBER -> applyBounds(resolveNumericValue(player, rawValue, definition), definition);
-        };
-    }
-
     private PreparedValue prepareSetValue(OfflinePlayer player, DataDefinition definition, Object value) {
-        Object parsedValue = resolveEffectiveValue(player, definition, value);
+        Object parsedValue = valueResolver.resolveEffectiveValue(player, definition, value);
         validateDynamicLeaderboardSupport(definition, value);
         return toPreparedValue(definition, parsedValue);
     }
 
     private PreparedValue prepareResetValue(OfflinePlayer player, DataDefinition definition) {
-        return toPreparedValue(definition, resolveEffectiveValue(player, definition, definition.defaultValue()));
+        return toPreparedValue(definition, valueResolver.resolveDefaultValue(player, definition));
     }
 
     private PreparedValue prepareGiveValue(OfflinePlayer player, DataDefinition definition, String rawAmount, Optional<String> storedValue) {
-        return prepareNumericDeltaValue(player, definition, rawAmount, storedValue, 1D);
-    }
-
-    private PreparedValue prepareTakeValue(OfflinePlayer player, DataDefinition definition, String rawAmount, Optional<String> storedValue) {
-        return prepareNumericDeltaValue(player, definition, rawAmount, storedValue, -1D);
-    }
-
-    private PreparedValue prepareNumericDeltaValue(
-        OfflinePlayer player,
-        DataDefinition definition,
-        String rawAmount,
-        Optional<String> storedValue,
-        double direction
-    ) {
         if (definition.dataType() != DataType.NUMBER) {
             throw new IllegalStateException("Data '" + definition.key() + "' is not numeric.");
         }
 
-        Object currentValue = resolveStoredValue(player, definition, storedValue);
-        double nextValue = toDouble(currentValue) + (toDouble(resolveEffectiveValue(player, definition, rawAmount)) * direction);
-        Object boundedValue = applyBounds(castNumber(nextValue, definition), definition);
+        Object currentValue = valueResolver.resolveStoredValue(player, definition, storedValue);
+        double nextValue = valueResolver.toDouble(currentValue) + valueResolver.toDouble(valueResolver.resolveEffectiveValue(player, definition, rawAmount));
+        Object boundedValue = valueResolver.castNumber(nextValue, definition);
+        return toPreparedValue(definition, boundedValue);
+    }
+
+    private PreparedValue prepareTakeValue(OfflinePlayer player, DataDefinition definition, String rawAmount, Optional<String> storedValue) {
+        if (definition.dataType() != DataType.NUMBER) {
+            throw new IllegalStateException("Data '" + definition.key() + "' is not numeric.");
+        }
+
+        Object currentValue = valueResolver.resolveStoredValue(player, definition, storedValue);
+        double nextValue = valueResolver.toDouble(currentValue) - valueResolver.toDouble(valueResolver.resolveEffectiveValue(player, definition, rawAmount));
+        Object boundedValue = valueResolver.castNumber(nextValue, definition);
         return toPreparedValue(definition, boundedValue);
     }
 
@@ -350,33 +302,8 @@ public final class DataService {
     }
 
     private PreparedValue toPreparedValue(DataDefinition definition, Object value) {
-        Double leaderboardValue = leaderboardService.supports(definition) ? toDouble(value) : null;
+        Double leaderboardValue = leaderboardService.supports(definition) ? valueResolver.toDouble(value) : null;
         return new PreparedValue(value, leaderboardValue);
-    }
-
-    private Object resolveStoredValue(OfflinePlayer player, DataDefinition definition, Optional<String> storedValue) {
-        return storedValue
-            .map(value -> resolveEffectiveValue(player, definition, value))
-            .orElseGet(() -> resolveEffectiveValue(player, definition, definition.defaultValue()));
-    }
-
-    private Object resolveStringValue(OfflinePlayer player, Object rawValue) {
-        if (!(rawValue instanceof String stringValue)) {
-            return rawValue;
-        }
-        return player == null ? stringValue : placeholderValueResolver.resolve(player, stringValue);
-    }
-
-    private Object resolveNumericValue(OfflinePlayer player, Object rawValue, DataDefinition definition) {
-        if (rawValue instanceof Number number) {
-            return castNumber(number.doubleValue(), definition);
-        }
-
-        String rawString = String.valueOf(rawValue).trim();
-        String resolved = placeholderValueResolver.containsPlaceholderMarkers(rawString)
-            ? placeholderValueResolver.resolve(player, rawString)
-            : rawString;
-        return numericExpressionResolver.resolve(resolved, definition.decimal());
     }
 
     private record PreparedValue(Object value, Double leaderboardValue) {
