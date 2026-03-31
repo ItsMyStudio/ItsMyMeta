@@ -1,4 +1,4 @@
-prefix: "<gradient:#ffb703:#fb8500><b>ItsMyData</b></gradient> <white>┃</white>"
+prefix: "<gradient:#ffb703:#fb8500>ɪᴛꜱᴍʏᴅᴀᴛᴀ</gradient> <white>┃</white>"
 
 logs:
   plugin-enabled: "Loaded <count> data definition(s) using <database_type>."
