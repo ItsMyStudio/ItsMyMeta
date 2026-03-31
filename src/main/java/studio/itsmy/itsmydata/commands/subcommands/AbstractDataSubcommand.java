@@ -20,14 +20,13 @@ public abstract class AbstractDataSubcommand implements DataSubcommand {
     private final Logger logger;
     protected final MessageService messages;
     protected final DataService dataService;
-    private final DataCommandTargetResolver targetResolver;
+    private final DataCommandTargetResolver targetResolver = new DataCommandTargetResolver();
 
     protected AbstractDataSubcommand(TaskDispatcher taskDispatcher, Logger logger, DataService dataService, MessageService messages) {
         this.taskDispatcher = taskDispatcher;
         this.logger = logger;
         this.dataService = dataService;
         this.messages = messages;
-        this.targetResolver = new DataCommandTargetResolver();
     }
 
     protected boolean requireDataKey(CommandSender sender, String label, String[] args, String usage) {

@@ -30,9 +30,9 @@ public final class DataService {
     private final DataStore dataStore;
     private final LeaderboardService leaderboardService;
     private final MessageService messageService;
-    private final DataValueResolver valueResolver;
-    private final ConcurrentMap<String, Long> dynamicLeaderboardRefreshTimestamps;
-    private final AtomicBoolean dynamicRefreshInProgress;
+    private final DataValueResolver valueResolver = new DataValueResolver();
+    private final ConcurrentMap<String, Long> dynamicLeaderboardRefreshTimestamps  = new ConcurrentHashMap<>();
+    private final AtomicBoolean dynamicRefreshInProgress  = new AtomicBoolean(false);
 
     public DataService(
         TaskDispatcher taskDispatcher,
@@ -48,9 +48,6 @@ public final class DataService {
         this.dataStore = dataStore;
         this.leaderboardService = leaderboardService;
         this.messageService = messageService;
-        this.valueResolver = new DataValueResolver();
-        this.dynamicLeaderboardRefreshTimestamps = new ConcurrentHashMap<>();
-        this.dynamicRefreshInProgress = new AtomicBoolean(false);
     }
 
     public Object getValue(OfflinePlayer player, String dataKey) {

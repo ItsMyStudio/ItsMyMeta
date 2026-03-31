@@ -32,16 +32,14 @@ public final class DataCommand implements CommandExecutor, TabCompleter {
 
     private static final List<String> DATA_KEY_SUBCOMMANDS = List.of("get", "set", "give", "take", "reset", "info");
 
-    private final Map<String, DataSubcommand> subcommands;
+    private final Map<String, DataSubcommand> subcommands = new LinkedHashMap<>();
     private final MessageService messages;
     private final DataService dataService;
-    private final ScopeProviders scopeProviders;
+    private final ScopeProviders scopeProviders = new ScopeProviders();
 
     public DataCommand(TaskDispatcher taskDispatcher, Logger logger, DataService dataService, MessageService messages, Runnable reloadAction) {
-        this.subcommands = new LinkedHashMap<>();
         this.messages = messages;
         this.dataService = dataService;
-        this.scopeProviders = new ScopeProviders();
         register(new GetDataSubcommand(taskDispatcher, logger, dataService, messages));
         register(new SetDataSubcommand(taskDispatcher, logger, dataService, messages));
         register(new GiveDataSubcommand(taskDispatcher, logger, dataService, messages));

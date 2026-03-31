@@ -6,13 +6,8 @@ import studio.itsmy.itsmydata.papi.PlaceholderValueResolver;
 
 final class DataValueResolver {
 
-    private final PlaceholderValueResolver placeholderValueResolver;
-    private final NumericExpressionResolver numericExpressionResolver;
-
-    DataValueResolver() {
-        this.placeholderValueResolver = new PlaceholderValueResolver();
-        this.numericExpressionResolver = new NumericExpressionResolver();
-    }
+    private final PlaceholderValueResolver placeholderValueResolver = new PlaceholderValueResolver();
+    private final NumericExpressionResolver numericExpressionResolver  = new NumericExpressionResolver();
 
     Object resolveDefaultValue(OfflinePlayer player, DataDefinition definition) {
         return resolveEffectiveValue(player, definition, definition.defaultValue());

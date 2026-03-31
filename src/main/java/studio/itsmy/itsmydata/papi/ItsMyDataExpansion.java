@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
@@ -37,18 +38,14 @@ public final class ItsMyDataExpansion extends PlaceholderExpansion {
 
     private final ItsMyDataPlugin plugin;
     private final DataService dataService;
-    private final Map<String, CachedValue<String>> leaderboardValueCache;
-    private final Map<String, CachedValue<String>> leaderboardPositionCache;
-    private final Map<String, CachedValue<String>> leaderboardTotalPlayersCache;
-    private final Set<String> loggedErrors;
+    private final Map<String, CachedValue<String>> leaderboardValueCache = new ConcurrentHashMap<>();
+    private final Map<String, CachedValue<String>> leaderboardPositionCache  = new ConcurrentHashMap<>();
+    private final Map<String, CachedValue<String>> leaderboardTotalPlayersCache  = new ConcurrentHashMap<>();
+    private final Set<String> loggedErrors  = new ConcurrentSkipListSet<>();
 
     public ItsMyDataExpansion(ItsMyDataPlugin plugin, DataService dataService) {
         this.plugin = plugin;
         this.dataService = dataService;
-        this.leaderboardValueCache = new ConcurrentHashMap<>();
-        this.leaderboardPositionCache = new ConcurrentHashMap<>();
-        this.leaderboardTotalPlayersCache = new ConcurrentHashMap<>();
-        this.loggedErrors = ConcurrentHashMap.newKeySet();
     }
 
     @Override

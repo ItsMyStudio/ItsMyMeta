@@ -15,13 +15,12 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class MessageService {
 
     private final JavaPlugin plugin;
-    private final MiniMessage miniMessage;
+    private final MiniMessage miniMessage = MiniMessage.miniMessage();
     private YamlConfiguration languageConfiguration;
     private Component prefixComponent;
 
     public MessageService(JavaPlugin plugin) {
         this.plugin = plugin;
-        this.miniMessage = MiniMessage.miniMessage();
     }
 
     public void load(String fileName) {
