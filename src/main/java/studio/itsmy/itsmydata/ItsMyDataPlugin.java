@@ -4,7 +4,6 @@ import java.util.Objects;
 import java.util.logging.Level;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitTask;
 import studio.itsmy.itsmydata.commands.DataCommand;
 import studio.itsmy.itsmydata.db.DatabaseSettings;
 import studio.itsmy.itsmydata.db.DatabaseSettingsLoader;
@@ -17,6 +16,7 @@ import studio.itsmy.itsmydata.data.DataService;
 import studio.itsmy.itsmydata.papi.ItsMyDataExpansion;
 import studio.itsmy.itsmydata.scope.ScopeResolver;
 import studio.itsmy.itsmydata.task.TaskDispatcher;
+import studio.itsmy.itsmydata.task.TaskDispatcher.CancellableTask;
 
 public final class ItsMyDataPlugin extends JavaPlugin {
 
@@ -25,7 +25,7 @@ public final class ItsMyDataPlugin extends JavaPlugin {
     private JdbcDataStore dataStore;
     private MessageService messageService;
     private LeaderboardService leaderboardService;
-    private BukkitTask dynamicLeaderboardRefreshTask;
+    private CancellableTask dynamicLeaderboardRefreshTask;
     private ItsMyDataExpansion placeholderExpansion;
     private TaskDispatcher taskDispatcher;
 
@@ -118,8 +118,7 @@ public final class ItsMyDataPlugin extends JavaPlugin {
         }
 
         long periodTicks = refreshMinutes * 60L * 20L;
-        this.dynamicLeaderboardRefreshTask = getServer().getScheduler().runTaskTimer(
-            this,
+        this.dynamicLeaderboardRefreshTask = taskDispatcher.runGlobalRepeating(
             () -> dataService.refreshDynamicLeaderboardsAsync().exceptionally(exception -> {
                 getLogger().log(Level.SEVERE, "Could not refresh dynamic leaderboard values.", unwrapCompletionException(exception));
                 return null;

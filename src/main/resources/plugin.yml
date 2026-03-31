@@ -3,6 +3,7 @@ version: '1.0-SNAPSHOT'
 main: studio.itsmy.itsmydata.ItsMyDataPlugin
 api-version: '1.21'
 softdepend: [PlaceholderAPI, SuperiorSkyblock2]
+folia-supported: true
 commands:
   data:
     description: Inspect or update configured data values
