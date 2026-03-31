@@ -28,7 +28,7 @@ public final class TakeDataSubcommand extends AbstractDataSubcommand {
 
     @Override
     public String usage() {
-        return "take <dataKey> [target] <amount>";
+        return "take <dataKey> <target> <amount>";
     }
 
     @Override

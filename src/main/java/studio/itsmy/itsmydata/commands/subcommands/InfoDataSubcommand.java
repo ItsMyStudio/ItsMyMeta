@@ -27,7 +27,7 @@ public final class InfoDataSubcommand extends AbstractDataSubcommand {
 
     @Override
     public String usage() {
-        return "info <dataKey> [target]";
+        return "info <dataKey> <target>";
     }
 
     @Override
@@ -43,6 +43,9 @@ public final class InfoDataSubcommand extends AbstractDataSubcommand {
 
         String dataKey = args[1];
         DataDefinition definition = dataService.getDefinition(dataKey);
+        if (isTargetRequired(definition) && args.length < 3) {
+            return requireTarget(sender, label, usage());
+        }
         DataCommandTargetResolver.ResolvedDataTarget target = resolveReadTarget(sender, definition, args);
         ResolvedScope resolvedScope = target.resolvedScope();
         messages.sendList(

@@ -8,9 +8,10 @@ import java.util.logging.Logger;
 import org.bukkit.command.CommandSender;
 import studio.itsmy.itsmydata.commands.DataCommandTargetResolver;
 import studio.itsmy.itsmydata.data.DataDefinition;
-import studio.itsmy.itsmydata.message.MessageService;
 import studio.itsmy.itsmydata.data.DataService;
+import studio.itsmy.itsmydata.message.MessageService;
 import studio.itsmy.itsmydata.scope.ResolvedScope;
+import studio.itsmy.itsmydata.scope.ScopeType;
 import studio.itsmy.itsmydata.task.TaskDispatcher;
 
 public abstract class AbstractDataSubcommand implements DataSubcommand {
@@ -61,6 +62,10 @@ public abstract class AbstractDataSubcommand implements DataSubcommand {
 
     protected DataCommandTargetResolver.ResolvedDataTarget resolveWriteTarget(CommandSender sender, DataDefinition definition, String[] args) {
         return targetResolver.resolveForWrite(sender, definition, args, 2);
+    }
+
+    protected boolean isTargetRequired(DataDefinition definition) {
+        return definition.scopeType() != ScopeType.GLOBAL;
     }
 
     protected <T> boolean completeAsync(CommandSender sender, CompletableFuture<T> future, Consumer<T> onSuccess) {

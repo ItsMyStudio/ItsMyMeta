@@ -26,7 +26,7 @@ public final class GetDataSubcommand extends AbstractDataSubcommand {
 
     @Override
     public String usage() {
-        return "get <dataKey> [target]";
+        return "get <dataKey> <target>";
     }
 
     @Override
@@ -42,6 +42,9 @@ public final class GetDataSubcommand extends AbstractDataSubcommand {
 
         String dataKey = args[1];
         DataDefinition definition = dataService.getDefinition(dataKey);
+        if (isTargetRequired(definition) && args.length < 3) {
+            return requireTarget(sender, label, usage());
+        }
         var target = resolveReadTarget(sender, definition, args);
         ResolvedScope resolvedScope = target.resolvedScope();
         return completeAsync(sender, dataService.getValueAsync(resolvedScope, definition), value -> messages.send(

@@ -28,7 +28,7 @@ public final class GiveDataSubcommand extends AbstractDataSubcommand {
 
     @Override
     public String usage() {
-        return "give <dataKey> [target] <amount>";
+        return "give <dataKey> <target> <amount>";
     }
 
     @Override

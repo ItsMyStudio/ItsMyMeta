@@ -10,16 +10,16 @@ commands:
 permissions:
   itsmydata.command.help:
     description: View the data command help.
-    default: true
+    default: op
   itsmydata.command.get:
     description: Read scoped data values.
-    default: true
+    default: op
   itsmydata.command.info:
     description: View data definitions.
-    default: true
+    default: op
   itsmydata.command.list:
     description: List configured data values.
-    default: true
+    default: op
   itsmydata.command.set:
     description: Set scoped data values.
     default: op

@@ -28,7 +28,7 @@ public final class SetDataSubcommand extends AbstractDataSubcommand {
 
     @Override
     public String usage() {
-        return "set <dataKey> [target] <value>";
+        return "set <dataKey> <target> <value>";
     }
 
     @Override

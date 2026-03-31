@@ -15,7 +15,7 @@ public final class DataCommandTargetResolver {
     }
 
     public ResolvedDataTarget resolveForRead(CommandSender sender, DataDefinition definition, String[] args, int targetIndex) {
-        return resolve(sender, definition, args, targetIndex, false);
+        return resolve(sender, definition, args, targetIndex, true);
     }
 
     public ResolvedDataTarget resolveForWrite(CommandSender sender, DataDefinition definition, String[] args, int targetIndex) {
